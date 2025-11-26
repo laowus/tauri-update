@@ -1,0 +1,15 @@
+{
+  "version": "0.1.4",
+  "notes": "0.1.4",
+  "pub_date": "2025-11-26T09:05:14Z",
+  "platforms": {
+    "windows-x86_64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUY2tEUXl5Y21ROC9pUHRObHhkS1p5YjZwaXAvbnduUXNyK095TzJHbjVpbVU1Tm13VzJTU1VjUXJuN1RWbXVKUDlpNGlicnljRDdpdmVIb1hmMW82MTQweTRFS3ZIaVFjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY0MTcwMTI4CWZpbGU6dGF1cmktdXBkYXRlXzAuMS40X3g2NC1zZXR1cC5leGUKZCtLVDhOV1BhYzUwakZaOFArWnV6ZVBNQTk3bG5ZNERQNGZ5eDFKeSsyM2k1SXA0MkFEcDZmaldvanIrVzQzbEVkYTVDdGZuWGF6bk92bUgyOEpaQWc9PQo=",
+      "url": "https://github.com/laowus/tauri-update/releases/download/0.1.4/tauri-update_0.1.4_x64-setup.exe"
+    },
+    "windows-x86_64-nsis": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUY2tEUXl5Y21ROC9pUHRObHhkS1p5YjZwaXAvbnduUXNyK095TzJHbjVpbVU1Tm13VzJTU1VjUXJuN1RWbXVKUDlpNGlicnljRDdpdmVIb1hmMW82MTQweTRFS3ZIaVFjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY0MTcwMTI4CWZpbGU6dGF1cmktdXBkYXRlXzAuMS40X3g2NC1zZXR1cC5leGUKZCtLVDhOV1BhYzUwakZaOFArWnV6ZVBNQTk3bG5ZNERQNGZ5eDFKeSsyM2k1SXA0MkFEcDZmaldvanIrVzQzbEVkYTVDdGZuWGF6bk92bUgyOEpaQWc9PQo=",
+      "url": "https://github.com/laowus/tauri-update/releases/download/0.1.4/tauri-update_0.1.4_x64-setup.exe"
+    }
+  }
+}

@@ -1,72 +1,98 @@
 <script setup>
-import { ref, onMounted } from "vue";
-import { invoke } from "@tauri-apps/api/core";
+import { check } from "@tauri-apps/plugin-updater";
+import { onMounted } from "vue";
 
-// 应用信息
-const appInfo = ref({ version: "", name: "" });
-// 更新状态
-const updateStatus = ref({
-  available: false,
-  version: "",
-  body: "",
-  downloading: false,
-});
-const message = ref("");
+// 使用onMounted钩子处理异步操作
+onMounted(async () => {
+  console.log("开始检查更新...");
+  console.log("当前时间戳:", new Date().toISOString());
 
-// 获取应用信息
-async function fetchAppInfo() {
   try {
-    const info = await invoke("get_app_info");
-    appInfo.value = info;
-  } catch (error) {
-    console.error("获取应用信息失败:", error);
-  }
-}
+    console.log("正在发送请求获取更新信息...");
+    const startTime = Date.now();
 
-// 检查更新
-async function checkUpdates() {
-  try {
-    message.value = "正在检查更新...";
-    const result = await invoke("check_for_updates");
-    if (result.update_available) {
-      updateStatus.value = {
-        available: true,
-        version: result.new_version,
-        body: result.body,
-        downloading: false,
-      };
-      message.value = `发现新版本: ${result.new_version}`;
+    const update = await check();
+    const endTime = Date.now();
+
+    console.log(`请求完成，耗时: ${endTime - startTime}ms`);
+    console.log("原始update对象:", update);
+
+    // 验证是否成功获取JSON内容
+    if (update && typeof update === "object") {
+      console.log("✓ 成功获取到JSON对象");
+
+      // 检查是否有可用更新
+      console.log(`是否有更新可用: ${update.available}`);
+
+      // 检查版本信息
+      if (update.version) {
+        console.log(`远程版本号: ${update.version}`);
+      } else {
+        console.warn("! 未找到版本号字段");
+      }
+
+      // 检查平台信息
+      if (update.platforms) {
+        console.log("✓ 包含platforms对象");
+        console.log("支持的平台:", Object.keys(update.platforms).join(", "));
+
+        // 检查当前平台(Windows-x86_64)的配置
+        const currentPlatform = "windows-x86_64";
+        if (update.platforms[currentPlatform]) {
+          console.log(`✓ 找到当前平台(${currentPlatform})的配置`);
+          const platformData = update.platforms[currentPlatform];
+          console.log(`下载URL: ${platformData.url || "未提供"}`);
+          console.log(`签名: ${platformData.signature ? "已提供" : "未提供"}`);
+        } else {
+          console.warn(`! 未找到当前平台(${currentPlatform})的配置`);
+        }
+      } else {
+        console.warn("! 未找到platforms字段");
+      }
     } else {
-      message.value = "当前已是最新版本";
-      updateStatus.value.available = false;
+      console.error("! 获取的不是有效的JSON对象");
     }
   } catch (error) {
-    message.value = `检查更新失败: ${error}`;
-  }
-}
+    console.error("更新检查失败:", error);
+    console.error("错误类型:", error.constructor.name);
 
-// 组件挂载时获取应用信息
-onMounted(() => {
-  fetchAppInfo();
+    // 尝试获取更详细的错误信息
+    if (error.message) {
+      console.error("错误消息:", error.message);
+    }
+
+    if (error.cause) {
+      console.error("错误原因:", error.cause);
+    }
+
+    if (error.code) {
+      console.error("错误代码:", error.code);
+    }
+
+    // 常见错误类型提示
+    if (
+      (error.message && error.message.includes("network")) ||
+      error.message.includes("url")
+    ) {
+      console.error("💡 可能是网络连接问题或URL不正确");
+    } else if (error.message && error.message.includes("parse")) {
+      console.error("💡 可能是JSON格式错误");
+    } else if (error.message && error.message.includes("signature")) {
+      console.error("💡 可能是签名验证问题，考虑启用skipVerify: true");
+    }
+  }
 });
 </script>
 
 <template>
   <div class="main-container">
-    <h1>{{ appInfo.name }}</h1>
-    <p>当前版本: {{ appInfo.version }}</p>
-
-    <div class="update-section">
-      <button @click="checkUpdates" :disabled="updateStatus.downloading">
-        检查更新
-      </button>
-
-      <p v-if="message" class="message">{{ message }}</p>
-    </div>
+    <h1>更新检查演示</h1>
+    <div class="message">请查看控制台输出以了解更新检查状态</div>
   </div>
 </template>
 
 <style>
+/* 保持现有样式 */
 .main-container {
   max-width: 600px;
   margin: 0 auto;
@@ -74,45 +100,5 @@ onMounted(() => {
   font-family: sans-serif;
 }
 
-.update-section {
-  margin-top: 30px;
-  padding: 20px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-}
-
-.update-info {
-  margin-top: 20px;
-  padding: 15px;
-  background-color: #f0f8ff;
-  border-radius: 6px;
-}
-
-.update-body {
-  color: #555;
-  font-size: 0.9em;
-}
-
-.message {
-  margin-top: 15px;
-  color: #666;
-}
-
-button {
-  padding: 8px 16px;
-  background-color: #4285f4;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-button:hover:not(:disabled) {
-  background-color: #3367d6;
-}
-
-button:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
-}
+/* 其他样式保持不变 */
 </style>

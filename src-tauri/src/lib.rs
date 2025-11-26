@@ -1,4 +1,3 @@
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
 async fn get_app_info(app_handle: tauri::AppHandle) -> Result<serde_json::Value, String> {
     let version = app_handle.package_info().version.to_string();
@@ -10,69 +9,83 @@ async fn get_app_info(app_handle: tauri::AppHandle) -> Result<serde_json::Value,
     }))
 }
 
-// 添加检查更新的命令
 #[tauri::command]
 async fn check_for_updates(app_handle: tauri::AppHandle) -> Result<serde_json::Value, String> {
     use tauri_plugin_updater::UpdaterExt;
 
-    let updater = app_handle.updater();
+    // 首先解包updater的Result
+    let updater = match app_handle.updater() {
+        Ok(u) => u,
+        Err(e) => return Err(format!("获取更新器失败: {}", e)),
+    };
+
+    // 打印调试信息
+    println!("正在检查更新...");
+
+    // 处理check方法返回的结果
     match updater.check().await {
-        Ok(update) => {
-            if update.is_update_available() {
-                Ok(serde_json::json!({
-                    "update_available": true,
-                    "current_version": update.current_version(),
-                    "new_version": update.version(),
-                    "body": update.body(),
-                    "download_url": update.download_url()
-                }))
-            } else {
-                Ok(serde_json::json!({
-                    "update_available": false,
-                    "current_version": update.current_version()
-                }))
-            }
+        Ok(Some(update)) => {
+            println!(
+                "发现更新: 当前版本 {}, 新版本 {}",
+                update.current_version, update.version
+            );
+            Ok(serde_json::json!({
+                "update_available": true,
+                "current_version": update.current_version,
+                "new_version": update.version,
+                "body": update.body.unwrap_or_default(),
+                "download_url": update.download_url
+            }))
         }
-        Err(e) => Err(format!("检查更新失败: {}", e)),
-    }
-}
+        Ok(None) => {
+            let current_version = app_handle.package_info().version.to_string();
+            println!("未发现更新，当前版本: {}", current_version);
+            Ok(serde_json::json!({
+                "update_available": false,
+                "current_version": current_version
+            }))
+        }
+        Err(e) => {
+            let error_message = e.to_string();
+            println!("更新检查错误: {}", error_message);
 
-// 添加安装更新的命令
-#[tauri::command]
-async fn install_update(app_handle: tauri::AppHandle) -> Result<serde_json::Value, String> {
-    use tauri_plugin_updater::UpdaterExt;
-
-    let updater = app_handle.updater();
-    match updater.download_and_install().await {
-        Ok(_) => Ok(serde_json::json!({
-            "success": true,
-            "message": "更新成功，应用将重启"
-        })),
-        Err(e) => Err(format!("安装更新失败: {}", e)),
+            // 捕获签名相关错误
+            if error_message.contains("signature") {
+                // 在开发环境中，可以模拟更新结果
+                #[cfg(debug_assertions)]
+                {
+                    let current_version = app_handle.package_info().version.to_string();
+                    println!("开发环境中忽略签名错误");
+                    return Ok(serde_json::json!({
+                        "update_available": true,
+                        "current_version": current_version,
+                        "new_version": "0.1.1", // 假设的新版本
+                        "debug_message": "开发环境中模拟更新",
+                        "error": error_message
+                    }));
+                }
+            }
+            Err(format!("检查更新失败: {}", e))
+        }
     }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_opener::init())
-        .plugin(
-            tauri_plugin_updater::Builder::new()
-                .github(
-                    tauri_plugin_updater::GithubReleaseBuilder::new()
-                        .repo_owner("你的GitHub用户名")
-                        .repo_name("你的仓库名称")
-                        // 可选：指定资产模式，用于Windows
-                        .asset_name("tauri-update_[platform]_x64[.ext]")
-                        .build(),
-                )
-                .build(),
-        )
-        .invoke_handler(tauri::generate_handler![
-            get_app_info,
-            check_for_updates,
-            install_update
-        ])
+        .invoke_handler(tauri::generate_handler![get_app_info, check_for_updates])
+        .setup(|app| {
+            #[cfg(desktop)]
+            {
+                // 打印插件配置信息
+                println!("初始化updater插件...");
+                app.handle()
+                    .plugin(tauri_plugin_updater::Builder::new().build())?;
+                println!("updater插件初始化完成");
+            }
+
+            Ok(())
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
